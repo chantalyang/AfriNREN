@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	    {% load staticfiles %}
+        <meta charset="utf-8">
+        <title>D3 Stacked Rowchart</title>
+        <link rel="shortcut icon" type="image/png" href="{% static "favicon.ico" %}">
+        <script type="text/javascript" src="{% static "js/d3/d3.js" %}"></script>
+    </head>
+    <body>
+		<style type="text/css">
+            rect {
+                fill: blue;
+            }
+            .axis path, .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+            #tooltip {
+                position: absolute;
+                text-align: center;
+                width: 40px;
+                height: auto;
+                padding: 10px;
+                background-color: white;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+                border-radius: 10px;
+                -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+                -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+                box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+                pointer-events: none;
+            }
+            #tooltip.hidden {
+                display: none;
+            }
+            #tooltip p {
+                margin: 0;
+                font-family: sans-serif;
+                font-size: 16px;
+                line-height: 20px;
+            }
+	    </style>
+        <div id="testzone"></div>
+        <script type="text/javascript">
+        // d3.json("{% static "data/rowchartjson.json" %}", function(dataset){
+        //     });
+        var h = 200;
+        var w = 300;
+        var data = [{'count': 432566, 'name': 'rands'},
+                    {'count': 214993, 'name': 'rands'}];
+
+        var yScale = d3.scale.ordinal()
+                             .domain(d3.range(data.length))
+                             .rangeRoundBands([0,h], 0.05);
+
+        var xScale = d3.scale.linear()
+                             .domain([0, d3.max(data, function(d){
+                                return d.count;
+                             })])
+                             .range([0,w]);
+        var tickFormatter = d3.format("s");
+
+        var xAxis = d3.svg.axis()
+                          .scale(xScale)
+                          .tickFormat(tickFormatter);
+
+        var svg = d3.select("#testzone")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+
+        svg.selectAll("rect")
+            .data(data)
+            .enter()
+            .append("rect")
+            .attr("x", function(d){
+                return 0;
+            })
+            .attr("y", function(d, i){
+                return yScale(i);
+            })
+            .attr("width", function(d){
+                return xScale(d.count);
+            })
+            .attr("height", yScale.rangeBand());
+        
+        var xAxisGroup = svg.append("g")
+                            .call(xAxis);
+        </script>
+    </body>
+</html>
