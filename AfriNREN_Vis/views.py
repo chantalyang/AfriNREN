@@ -27,8 +27,10 @@ def graphRDG():
     nodes have ASN, country, name, continent and bytes
     links have src, dst, bytes, latency
     '''
-    ASNs = list(set(['AS%d' % random.randint(1000,50000) for x in range(50)]))
-    Countries = ["South Africa", "Zimbabwe", "Kenya", "United Kingdom", "Netherlands", "Nigeria", "Botswana", "Somalia"]
+    ASNs = list(set(['AS%d' % random.randint(1000, 50000) for x in range(50)]))
+    Countries = ["South Africa", "Zimbabwe", "Kenya",
+                 "United Kingdom", "Netherlands", "Nigeria",
+                 "Botswana", "Somalia"]
 
     nodes = [{"ASN": ASN,
               "Country": random.choice(Countries),
@@ -42,13 +44,24 @@ def graphRDG():
               "Bytes": random.randint(10000000, 1000000000),
               "Latency": random.randint(5, 500),
               "weight": random.randint(1, 3),
-              } for x in range(0,50)]
+              } for x in range(0, 50)]
+
+    routes = [{"src": random.choice(ASNs),
+               "dst": random.choice(ASNs),
+               "hops": [{"ASN": random.choice(ASNs)} for x in range(1, 4)]}
+              for y in range(10, 30)]
+
+    for route in routes:
+        links.append({"source": route.src,
+                      "target": route.hops[0],
+                      })
 
     nodesjson = json.dumps(nodes)
     linksjson = json.dumps(links)
 
     data = {'nodes': nodes,
-            'links': links}
+            'links': links,
+            'routes': routes}
 
     return data
 
