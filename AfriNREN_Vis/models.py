@@ -42,9 +42,9 @@ class AS(models.Model):
     Country = models.CharField(max_length=30, help_text='Country of the AS')
     Continent = models.CharField(max_length=20,
                                  help_text='Continent of the AS')
-    Organisation = models.CharField(max_length=80,
+    Organisation = models.CharField(max_length=140,
                                     help_text='''Name of the organisation that
                                     owns the AS''')
 
     def __unicode__(self):
-        return u'%s: %s' % (self.ASN, self.Organisation)
+        return u'%s: . [%s/%s]' % (self.ASN, self.Country, self.Continent)
