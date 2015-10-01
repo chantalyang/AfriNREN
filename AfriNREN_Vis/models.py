@@ -21,7 +21,7 @@ class Flow(models.Model):
         of the flow.''')
     source_asn = models.CharField(max_length=21, help_text='''AS number of the
         source IP Address.''')
-    destination_asn = models.CharField(max_length=8, help_text='''AS number of the
+    destination_asn = models.CharField(max_length=21, help_text='''AS number of the
         destination IP Address.''')
     protocol = models.CharField(max_length=8, help_text='''Protocol of the
         flow.''')
@@ -30,3 +30,6 @@ class Flow(models.Model):
         transferred in this aggregate of flows.''')
     data_source = models.CharField(max_length=30, help_text='''The source
         of the flow data.''')
+
+    def __unicode__(self):
+        return u'%s' % self.datetime_started

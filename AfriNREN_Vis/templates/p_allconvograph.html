@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+{% load staticfiles %}
+<script src="{% static "js/d3.min.js" %}"></script>
+<script src="{% static "js/jquery-1.11.3.min.js" %}"></script>
+<style>
+
+.link {
+  stroke: #aaa;
+}
+
+.node text {
+stroke:#333;
+cursos:pointer;
+}
+
+.node circle{
+stroke:#fff;
+stroke-width:3px;
+fill:#555;
+}
+
+circle.african {
+  fill:green;
+}
+circle.selected{
+  fill:blue;
+}
+circle.source{
+  fill:green;
+}
+circle.destination{
+  fill:orange;
+}
+circle.hop{
+  fill:pink;
+}
+#tooltip {
+    position: absolute;
+    text-align: center;
+    width: 200px;
+    height: auto;
+    padding: 10px;
+    background-color: white;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+    -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+#tooltip.hidden {
+    display: none;
+}
+#tooltip p {
+    margin: 0;
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 20px;
+}
+
+</style>
+<body>
+  <div id="tooltip" class="hidden">
+  <p><span id="value">100</span></p>
+  <p><span id="ASN">100</span></p>
+    <p><span id="Organisation">100</span></p>
+  <p><span id="Region">100</span></p>
+<script>
+
+var width = 1200,
+    height = 800
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var force = d3.layout.force()
+    .gravity(.05)
+    .distance(100)
+    .charge(-100)
+    .size([width, height]);
+
+d3.json("{% static "data/top-conversations-graph-vis-data.json" %}", function(json) {
+  console.log(json);
+  force
+      .nodes(json.nodes)
+      .links(json.links)
+      .start();
+
+  var nodeScale = d3.scale.linear()
+                          .domain([0,d3.max(json.nodes, function(d){ return d.Bytes; })])
+                          .range([5,20]);
+
+  var fmt = d3.format(".0f");
+  var byteFormat = function(bytes){
+      if(bytes > 1000000000){
+          return fmt(bytes/1000000000) + "GB";
+      } else if(bytes > 1000000) {
+          return fmt(bytes/1000000) + "MB";
+      } else if(bytes > 1000) {
+          return fmt(bytes/1000) + "kB";
+      } else {
+          return bytes + "B";
+      }
+  };
+
+  var link = svg.selectAll(".link")
+      .data(json.links)
+    .enter().append("line")
+      .attr("class", "link")
+    .style("stroke-width", 2);
+
+  var node = svg.selectAll(".node")
+      .data(json.nodes)
+    .enter().append("g")
+      .attr("class", "node")
+      .call(force.drag);
+
+  // node.append("circle")
+  //     .attr("r", function(d){
+  //       return nodeScale(d.Bytes);
+  //     })
+  //     .style("fill", function(d){ if(d.Continent == 'Africa'){
+  //       return "green";
+  //     } else {
+  //       return "blue";
+  //     }});
+
+  node.append("circle")
+      .attr("r", function(d){
+        if(d.Bytes){
+          return nodeScale(d.Bytes);
+        } else {
+          return nodeScale(0);
+        }
+      })
+      .classed("african", function(d){ if(d.Continent == 'NA'){
+        return true;
+      } else {
+        return false;
+      }});
+
+  var circles = svg.selectAll("circle");
+  // node.append("text")
+  //     .attr("dx", 12)
+  //     .attr("dy", ".35em")
+  //     .text(function(d) { return d.ASN });
+
+  node.on("click", function(d){
+    var nodesToChange = [];
+    json.nodes.forEach(function(n){
+      if(n.group == d.group){
+        nodesToChange.push(n.ASN);
+      };
+    });
+    circles.classed("selected", function(circ){
+      if($.inArray(circ.ASN, nodesToChange) > -1){
+        return true;
+      } else {
+        return false;
+      }
+    });
+
+  node.on('mouseover', function (d) {
+                    // var xPos = parseFloat(d3.select(this).attr('x')) / 2 + width / 2;
+                    // var yPos = parseFloat(d3.select(this).attr('y')) + yScale.rangeBand() / 2;
+                    var xPos = d3.select(this).attr('x') + 300,
+                        yPos = 100;
+
+                    d3.select('#tooltip')
+                        .style('left', xPos + 'px')
+                        .style('top', yPos + 'px')
+                        .select('#value')
+                        .text(byteFormat(d.bytes));
+                    d3.select('#ASN')
+                        .text(d.ASN);
+                    d3.select('#Organisation')
+                        .text(d.Organisation);
+                    d3.select('#Region')
+                        .text(d.Country + ', ' + d.Continent);
+
+                    d3.select('#tooltip').classed('hidden', false);
+                })
+                    .on('mouseout', function () {
+                    d3.select('#tooltip').classed('hidden', true);
+                })
+  });
+
+  // node.on("click", function(d){ 
+  //   console.log(d);
+  //   circles.classed("selected", 
+  //     function(x){
+  //       console.log(x);
+  //       if(x.ASN == d.ASN){
+  //         return true;
+  //       } else {
+  //         return false;
+  //       }}
+  //   );
+  // });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+  });
+
+});
+
+</script>

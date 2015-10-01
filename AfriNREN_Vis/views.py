@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, Http404, JsonResponse
+from django.db.models import Sum
+from AfriNREN_Vis.models import Flow
 import json
 import random
 
@@ -51,10 +53,10 @@ def graphRDG():
                "hops": [{"ASN": random.choice(ASNs)} for x in range(1, 4)]}
               for y in range(10, 30)]
 
-    for route in routes:
-        links.append({"source": route.src,
-                      "target": route.hops[0],
-                      })
+    # for route in routes:
+    #     links.append({"source": route.src,
+    #                   "target": route.hops[0],
+    #                   })
 
     nodesjson = json.dumps(nodes)
     linksjson = json.dumps(links)
@@ -73,21 +75,63 @@ def graphjson(request):
 def graph(request):
     return render(request, "testtemplates/p_graph.html")
 
-# def allprobes(request):
 
-#     json_data = open('static/data/all_probes.json')
-#     data1 = json.load(json_data)
-#     data2 = json.dumps(json_data)
-
-#     json_data.close()
-#     return HttpResponse(data1, mimetype='application/json')
+def graph2(request):
+    return render(request, "p_graph2.html")
 
 
-# def fibrejson(request):
+def allconvograph(request):
+    return render(request, "p_allconvograph.html")
 
-#     json_data = open('static/data/fibre.json')
-#     data1 = json.load(json_data)
-#     data2 = json.dumps(json_data)
 
-#     json_data.close()
-#     return HttpResponse(data1, mimetype='application/json')
+def getTopSrcs():
+    '''
+    Return list of source ASNs with the top most traffic
+    transferred.
+    '''
+    top_srcs = []
+    try:
+        top_srcs_obs = Flow.objects.values('source_asn')\
+            .annotate(sum_bytes=Sum('bytes_transferred'))\
+            .order_by('-sum_bytes')[0:20]
+    except IndexError:
+        top_srcs_obs = None
+
+    for ob in top_srcs_obs:
+        top_srcs.append(ob['source_asn'])
+    return top_srcs
+
+
+def getTopDstsPerTopSrc():
+    '''
+    Return dictionary linking source ASNs to a list of their
+    top conversation partners (destination ASNs).
+    '''
+    tops = {}
+    top_dst_asns = []
+    top_src_asns = getTopSrcs()
+    top_flow_obs = Flow.objects\
+        .filter(source_asn__in=top_src_asns)\
+        .values('source_asn', 'destination_asn')\
+        .annotate(sum_bytes=Sum('bytes_transferred'))\
+        .order_by('-bytes_transferred')
+    for ob in top_flow_obs:
+        try:
+            # limit list of destination ASNs to 5
+            dst_ASNs = tops[ob['source_asn']]
+            if len(dst_ASNs) < 5:
+                tops[ob['source_asn']].append(ob['destination_asn'])
+        except KeyError:
+            tops[ob['source_asn']] = [ob['destination_asn']]
+    for src in tops.keys():
+        top_dst_asns.extend(tops[src])
+    top_dst_asns = list(set(top_dst_asns))
+    return tops
+
+
+def getListOfImportantASNs():
+    nb_asns = []
+
+
+def getData(request):
+    return HttpResponse(getTopDstsPerTopSrc())
