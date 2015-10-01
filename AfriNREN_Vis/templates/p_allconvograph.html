@@ -35,38 +35,22 @@ circle.destination{
 circle.hop{
   fill:pink;
 }
-#tooltip {
-    position: absolute;
-    text-align: center;
-    width: 200px;
-    height: auto;
-    padding: 10px;
-    background-color: white;
-    -webkit-border-radius: 10px;
-    -moz-border-radius: 10px;
-    border-radius: 10px;
-    -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
-    -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
-    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
-    pointer-events: none;
-}
-#tooltip.hidden {
-    display: none;
-}
-#tooltip p {
-    margin: 0;
-    font-family: sans-serif;
-    font-size: 16px;
-    line-height: 20px;
+div.tooltip { 
+    position: absolute;     
+    text-align: center;     
+    width: 200px;          
+    height: 28px;         
+    padding: 2px;       
+    font: 12px sans-serif;    
+    background: lightsteelblue; 
+    border: 0px;    
+    border-radius: 8px;     
+    pointer-events: none;     
 }
 
 </style>
 <body>
-  <div id="tooltip" class="hidden">
-  <p><span id="value">100</span></p>
-  <p><span id="ASN">100</span></p>
-    <p><span id="Organisation">100</span></p>
-  <p><span id="Region">100</span></p>
+</body>
 <script>
 
 var width = 1200,
@@ -92,10 +76,18 @@ d3.json("{% static "data/top-conversations-graph-vis-data.json" %}", function(js
   var nodeScale = d3.scale.linear()
                           .domain([0,d3.max(json.nodes, function(d){ return d.Bytes; })])
                           .range([5,20]);
+  var linkWidthScale = d3.scale.linear()
+                          .domain([0,d3.max(json.links, function(d){ return d.Bytes; })])
+                          .range([1,10]);
+  var linkOpacityScale = d3.scale.linear()
+                          .domain([0,d3.max(json.links, function(d){ return d.Bytes; })])
+                          .range([0.15,1]);
 
-  var fmt = d3.format(".0f");
+  var fmt = d3.format(".2f");
   var byteFormat = function(bytes){
-      if(bytes > 1000000000){
+      if(bytes > 1000000000000) {
+          return fmt(bytes/1000000000000) + "TB";
+      } else if(bytes > 1000000000){
           return fmt(bytes/1000000000) + "GB";
       } else if(bytes > 1000000) {
           return fmt(bytes/1000000) + "MB";
@@ -105,12 +97,20 @@ d3.json("{% static "data/top-conversations-graph-vis-data.json" %}", function(js
           return bytes + "B";
       }
   };
+  var div = d3.select("body").append("div") 
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
 
   var link = svg.selectAll(".link")
       .data(json.links)
     .enter().append("line")
       .attr("class", "link")
-    .style("stroke-width", 2);
+    .style("stroke-width", function(d){
+      return linkWidthScale(d.Bytes);
+    })
+    .style("stroke-opacity", function(d){
+      return linkOpacityScale(d.Bytes);
+    });
 
   var node = svg.selectAll(".node")
       .data(json.nodes)
@@ -163,31 +163,46 @@ d3.json("{% static "data/top-conversations-graph-vis-data.json" %}", function(js
       }
     });
 
-  node.on('mouseover', function (d) {
-                    // var xPos = parseFloat(d3.select(this).attr('x')) / 2 + width / 2;
-                    // var yPos = parseFloat(d3.select(this).attr('y')) + yScale.rangeBand() / 2;
-                    var xPos = d3.select(this).attr('x') + 300,
-                        yPos = 100;
+  // node.on('mouseover', function (d) {
+  //                   var xPos = parseFloat(d3.select(this).attr('x')) / 2 + width / 2;
+  //                   var yPos = parseFloat(d3.select(this).attr('y')) + yScale.rangeBand() / 2;
+  //                   // var xPos = d3.select(this).attr('x') + 300,
+  //                   //     yPos = 100;
 
-                    d3.select('#tooltip')
-                        .style('left', xPos + 'px')
-                        .style('top', yPos + 'px')
-                        .select('#value')
-                        .text(byteFormat(d.bytes));
-                    d3.select('#ASN')
-                        .text(d.ASN);
-                    d3.select('#Organisation')
-                        .text(d.Organisation);
-                    d3.select('#Region')
-                        .text(d.Country + ', ' + d.Continent);
+  //                   d3.select('#tooltip')
+  //                       .style('left', xPos + 'px')
+  //                       .style('top', yPos + 'px')
+  //                       .select('#value')
+  //                       .text(byteFormat(d.bytes));
+  //                   d3.select('#ASN')
+  //                       .text(d.ASN);
+  //                   d3.select('#Organisation')
+  //                       .text(d.Organisation);
+  //                   d3.select('#Region')
+  //                       .text(d.Country + ', ' + d.Continent);
 
-                    d3.select('#tooltip').classed('hidden', false);
-                })
-                    .on('mouseout', function () {
-                    d3.select('#tooltip').classed('hidden', true);
-                })
+  //                   d3.select('#tooltip').classed('hidden', false);
+  //               })
+  //                   .on('mouseout', function () {
+  //                   d3.select('#tooltip').classed('hidden', true);
+  //               })
+  // });
+  node.on("mouseover", function(d) {    
+          div.transition()    
+              .duration(200)    
+              .style("opacity", .9);    
+          div .html(function(){
+            return 'ASN: ' + d.ASN + '</br>Bytes: ' + byteFormat(d.Bytes) + '</br>';
+          })  
+              .style("left", (d3.event.pageX) + "px")   
+              .style("top", (d3.event.pageY - 28) + "px");  
+          })          
+      .on("mouseout", function(d) {   
+          div.transition()    
+              .duration(500)    
+              .style("opacity", 0); 
+      });
   });
-
   // node.on("click", function(d){ 
   //   console.log(d);
   //   circles.classed("selected", 
