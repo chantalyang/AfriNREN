@@ -37,7 +37,8 @@ class Flow(models.Model):
 
 class AS(models.Model):
     ASN = models.CharField(max_length=21,
-                           help_text='Identification number for the AS')
+                           help_text='Identification number for the AS',
+                           primary_key=True)
     Country = models.CharField(max_length=30, help_text='Country of the AS')
     Continent = models.CharField(max_length=20,
                                  help_text='Continent of the AS')
