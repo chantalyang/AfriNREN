@@ -33,3 +33,17 @@ class Flow(models.Model):
 
     def __unicode__(self):
         return u'%s' % self.datetime_started
+
+
+class AS(models.Model):
+    ASN = models.CharField(max_length=21,
+                           help_text='Identification number for the AS')
+    Country = models.CharField(max_length=30, help_text='Country of the AS')
+    Continent = models.CharField(max_length=20,
+                                 help_text='Continent of the AS')
+    Organisation = models.CharField(max_length=80,
+                                    help_text='''Name of the organisation that
+                                    owns the AS''')
+
+    def __unicode__(self):
+        return u'%s: %s' % (self.ASN, self.Organisation)
